@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b0d18" />
+    <meta name="description" content="A calmer space to plan, focus, and make progress after dark." />
+    <title>Afterhours — Study planner</title>
+    <style>
+:root {
+  color-scheme: dark;
+  --bg: #0b0d18;
+  --sidebar: #0e101d;
+  --surface: #121522;
+  --surface-raised: #171a29;
+  --surface-soft: #151827;
+  --border: #25283a;
+  --border-soft: #202335;
+  --text: #f2f1fb;
+  --muted: #9093a8;
+  --dim: #65697f;
+  --mint: #9ce8cd;
+  --mint-bright: #71dcb5;
+  --violet: #a99bff;
+  --orange: #ffbb84;
+  --mono: "DM Mono", ui-monospace, monospace;
+  --sans: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --display: "Space Grotesk", var(--sans);
+}
+* { box-sizing: border-box; }
+html { min-width: 320px; background: var(--bg); scroll-behavior: smooth; }
+body { margin: 0; color: var(--text); background: var(--bg); font-family: var(--sans); font-size: 14px; -webkit-font-smoothing: antialiased; }
+button, input, textarea { font: inherit; }
+button { color: inherit; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; }
+.app-shell { min-height: 100vh; }
+.sidebar { position: fixed; z-index: 5; inset: 0 auto 0 0; width: 246px; padding: 31px 18px 19px; display: flex; flex-direction: column; background: var(--sidebar); border-right: 1px solid #1d2030; }
+.brand { display: inline-flex; align-items: center; gap: 11px; width: max-content; margin: 0 0 51px 9px; color: var(--text); text-decoration: none; font: 600 19px var(--display); letter-spacing: -.8px; }
+.brand-dot { color: var(--mint); }
+.brand-mark { height: 23px; display: flex; align-items: end; gap: 3px; padding: 3px 2px; }
+.brand-mark span { width: 4px; border-radius: 4px; background: var(--mint); box-shadow: 0 0 9px #9ce8cd4c; }
+.brand-mark span:nth-child(1) { height: 8px; }.brand-mark span:nth-child(2) { height: 15px; }.brand-mark span:nth-child(3) { height: 21px; }
+.sidebar-label, .card-kicker, .eyebrow, .page-footer, .summary-card small { color: #83879d; font: 500 10px var(--mono); letter-spacing: 1.35px; }
+.sidebar-label { margin: 0 0 13px 11px; font-size: 9px; }
+.nav-list { display: grid; gap: 4px; }
+.nav-item { position: relative; display: flex; align-items: center; gap: 13px; width: 100%; height: 43px; padding: 0 12px; color: #9a9db0; background: transparent; border: 0; border-radius: 7px; text-align: left; cursor: pointer; transition: background .18s, color .18s; }
+.nav-item:hover { color: var(--text); background: #191c2a; }
+.nav-item.active { color: var(--mint); background: #1b2428; }
+.nav-item.active::before { position: absolute; top: 10px; bottom: 10px; left: -18px; width: 2px; border-radius: 3px; background: var(--mint); content: ""; }
+.nav-icon { width: 18px; color: inherit; font-size: 19px; line-height: 1; text-align: center; }
+.nav-count { margin-left: auto; padding: 2px 7px; color: #a0a3b6; background: #222536; border-radius: 9px; font: 11px var(--mono); }
+.nav-indicator { display: none; }
+.sidebar-bottom { margin-top: auto; }
+.profile-button { display: flex; width: 100%; align-items: center; gap: 10px; padding: 9px 4px; background: transparent; border: 0; text-align: left; cursor: pointer; }
+.avatar { display: grid; width: 32px; height: 32px; place-items: center; color: #b8b0ff; background: #302c4a; border: 1px solid #4e476d; border-radius: 50%; font: 600 12px var(--display); }
+.profile-copy { display: grid; gap: 3px; }.profile-copy strong { font-size: 11px; font-weight: 600; }.profile-copy small { color: #74788c; font-size: 10px; }
+.profile-more { margin-left: auto; color: #83869a; font-size: 20px; letter-spacing: 1px; }
+.main-content { margin-left: 246px; padding: 0 44px; min-height: 100vh; max-width: 1600px; }
+.browser-header { margin: 0 -44px; padding: 0 44px; border-bottom: 1px solid #1b1e2d; background: #0e101b; }
+.browser-tabs { min-height: 43px; display: flex; align-items: stretch; gap: 4px; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #373a4c transparent; }
+.browser-tab { position: relative; min-width: 128px; max-width: 190px; display: inline-flex; flex: 0 1 172px; align-items: center; gap: 9px; padding: 0 13px; color: #85899d; background: transparent; border: 1px solid transparent; border-bottom: 0; border-radius: 7px 7px 0 0; cursor: pointer; white-space: nowrap; }
+.browser-tab:hover { color: #d5d5e0; background: #151827; }
+.browser-tab.active { color: #e4e4ee; background: #171a28; border-color: #292c3d; }
+.browser-tab.active::after { position: absolute; right: 10px; bottom: -1px; left: 10px; height: 2px; background: var(--mint); content: ""; }
+.browser-tab-icon { display: grid; width: 19px; height: 19px; flex: 0 0 19px; place-items: center; border-radius: 5px; font-size: 12px; }
+.overview-icon { color: var(--mint); background: #23332f; }
+.assignments-icon { color: var(--violet); background: #2a2740; }
+.clock-icon { color: var(--orange); background: #352d29; }
+.notes-icon { color: #a9a0ff; background: #29263e; }
+.settings-icon { color: #9ce8cd; background: #20312e; }
+.browser-tab-label { overflow: hidden; text-overflow: ellipsis; }
+.browser-tab-count { margin-left: auto; padding: 2px 6px; color: #a4a6b8; background: #252839; border-radius: 10px; font: 9px var(--mono); }
+.browser-tabs-spacer { flex: 1 0 0; }
+.browser-tabs-caption { align-self: center; padding: 0 5px 0 10px; color: #5f6378; font: 8px var(--mono); letter-spacing: 1px; white-space: nowrap; }
+.live-label i { width: 6px; height: 6px; border-radius: 50%; background: #83d7ae; box-shadow: 0 0 7px #83d7ae7a; }
+.view { display: none; max-width: 1160px; margin: 0 auto; padding: 34px 0 12px; animation: enter .24s ease-out; }
+.view.active { display: block; }
+@keyframes enter { from { opacity: .6; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.welcome-row { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 23px; }
+.eyebrow { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; font-size: 9px; }
+.eyebrow-line { width: 14px; height: 1px; background: var(--mint); }
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: 7px; font: 600 clamp(25px, 3vw, 32px)/1.18 var(--display); letter-spacing: -1.1px; }
+.wave { display: inline-block; margin-left: 3px; color: var(--mint); font-size: 19px; vertical-align: 3px; }
+.welcome-subtitle { margin: 0; color: #9295a9; font-size: 12px; }
+.primary-button, .secondary-button { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: transform .15s, background .15s, border-color .15s; }
+.primary-button { color: #0d1715; background: var(--mint); border: 1px solid var(--mint); box-shadow: 0 4px 18px #8be6c11b; }
+.primary-button:hover { background: #b1f3da; transform: translateY(-1px); }
+.primary-button > span:first-child { font-size: 15px; line-height: 1; }
+.secondary-button { color: #c1c3d1; background: #1a1d2b; border: 1px solid #32364a; }
+.secondary-button:hover { background: #222536; border-color: #50546b; }
+.dashboard-grid { display: grid; grid-template-columns: 1.14fr .86fr; gap: 14px; }
+.card { position: relative; overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; }
+.card-heading, .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.card-kicker { font-size: 9px; }
+h2 { margin: 6px 0 0; font: 600 18px var(--display); letter-spacing: -.45px; }
+.clock-card { min-height: 225px; padding: 20px 22px 15px; background: radial-gradient(ellipse at 100% 0%, #2825485c 0, transparent 52%), #141624; }
+.clock-card-head { display: flex; align-items: center; justify-content: space-between; }
+.live-label { display: flex; align-items: center; gap: 6px; color: #85899b; font: 9px var(--mono); letter-spacing: .7px; }.live-label i { width: 5px; height: 5px; }
+.clock-time, .big-clock { display: flex; align-items: baseline; gap: 7px; margin-top: 26px; color: #f0effa; font: 500 clamp(43px, 5vw, 58px)/1 var(--mono); letter-spacing: -4px; }
+.clock-time span, .big-clock span { color: #85879d; font-size: .44em; letter-spacing: -1px; }
+.clock-date { margin-top: 8px; color: #9699ac; font-size: 10px; }
+.clock-card-bottom { display: flex; align-items: center; gap: 7px; margin-top: 20px; color: #85899b; font-size: 9px; }.moon-icon { color: #b3aaff; font-size: 15px; }
+.assignments-card { min-height: 257px; padding: 19px 21px 16px; }
+.section-heading h2 { margin-top: 5px; font-size: 15px; }
+.task-list { margin-top: 15px; }
+.task-row { display: flex; align-items: center; gap: 11px; min-height: 48px; border-bottom: 1px solid #222536; }
+.task-row:last-child { border-bottom: 0; }
+.task-check { width: 15px; height: 15px; flex: 0 0 15px; display: grid; place-items: center; padding: 0; color: #0c1513; background: transparent; border: 1px solid #51566b; border-radius: 4px; cursor: pointer; font-size: 10px; transition: .15s; }
+.task-check:hover { border-color: var(--mint); }.task-row.completed .task-check { background: var(--mint); border-color: var(--mint); }
+.task-copy { min-width: 0; flex: 1; display: grid; gap: 4px; }.task-name { overflow: hidden; color: #e0e0eb; font-size: 10px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }.task-meta { color: #7d8195; font-size: 9px; }
+.task-row.completed .task-name { color: #74788a; text-decoration: line-through; }
+.task-subject { padding: 4px 7px; color: #b6adff; background: #282640; border-radius: 4px; font-size: 8px; white-space: nowrap; }
+.task-due { min-width: 57px; color: #9b9eb0; font: 9px var(--mono); text-align: right; }.task-due.urgent { color: var(--orange); }.task-due.overdue { color: #f18f91; }
+.page-footer { display: flex; justify-content: space-between; gap: 14px; padding: 23px 0 12px; color: #62667a; font-size: 8px; letter-spacing: .9px; }.page-footer span:last-child { color: #777b8e; font: 9px var(--sans); letter-spacing: 0; }.footer-moon { margin-left: 5px; color: #a89eff; font-size: 13px; }
+.empty-state { display: grid; justify-items: center; gap: 7px; padding: 27px 8px 20px; color: #7e8296; text-align: center; }.empty-state strong { color: #c8c9d7; font-size: 11px; font-weight: 500; }.empty-state span:last-child { font-size: 10px; }.empty-icon { color: var(--mint); font-size: 18px; }.hidden { display: none !important; }
+.page-title-row { margin-bottom: 24px; }
+.assignment-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-bottom: 15px; }
+.summary-card { display: flex; align-items: center; gap: 12px; min-height: 76px; padding: 14px 17px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }.summary-icon { display: grid; width: 34px; height: 34px; place-items: center; background: #29263e; border-radius: 7px; font-size: 15px; }.summary-icon.violet { color: var(--violet); }.summary-icon.orange { color: var(--orange); background: #352b27; }.summary-icon.green { color: var(--mint); background: #20322e; }.summary-card div:last-child { display: grid; gap: 5px; }.summary-card small { font-size: 8px; }.summary-card strong { font: 500 20px var(--mono); }
+.all-assignments-card { min-height: 260px; padding: 20px 22px; }.filters { display: flex; gap: 3px; padding: 3px; background: #0e101b; border: 1px solid #26293a; border-radius: 6px; }.filter-button { padding: 5px 9px; color: #85899c; background: transparent; border: 0; border-radius: 4px; font-size: 9px; cursor: pointer; }.filter-button.active { color: #d2d3e0; background: #282a3a; }
+.full-task-list { margin-top: 12px; }.full-task-list .task-row { min-height: 58px; }.task-actions { display: flex; gap: 6px; align-items: center; }.task-delete { padding: 4px; color: #6d7186; background: none; border: 0; cursor: pointer; font-size: 14px; }.task-delete:hover { color: #ff9494; }
+.clock-page-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 14px; }.big-clock-card { min-height: 285px; padding: 25px 27px; background: radial-gradient(ellipse at 85% 20%, #423c6c65 0, transparent 48%), linear-gradient(145deg, #151827, #121522); }.big-clock { margin-top: 40px; font-size: clamp(55px, 7vw, 75px); }.big-clock-date { margin-top: 11px; color: #a1a3b6; font-size: 12px; }.clock-zone { display: flex; align-items: center; gap: 8px; margin-top: 29px; color: #797d91; font: 9px var(--mono); letter-spacing: 1px; }.live-pulse { width: 6px; height: 6px; background: var(--mint); border-radius: 50%; box-shadow: 0 0 10px #9ce8cd; }.clock-decoration { position: absolute; right: 28px; bottom: 10px; color: #aaa0ec; font-size: 42px; opacity: .33; }
+.alarm-card { min-height: 285px; padding: 22px 23px; }.alarm-icon { color: #aca2ff; font-size: 19px; }.alarm-form { display: grid; gap: 7px; margin-top: 19px; }.alarm-form label, .task-dialog label { color: #a1a4b6; font-size: 10px; }.alarm-input-row { display: flex; gap: 8px; }.alarm-input-row input, .alarm-name-input, .task-dialog input { min-width: 0; height: 36px; padding: 0 10px; color: #e5e5ef; background: #0f111c; border: 1px solid #303347; border-radius: 5px; color-scheme: dark; }.alarm-input-row input { flex: 1; }.alarm-input-row .primary-button { flex: 0 0 auto; }.alarm-label { margin-top: 7px; }.alarm-label span { color: #6f7387; }.alarm-name-input { width: 100%; height: 33px; font-size: 10px; }.alarm-name-input::placeholder, .task-dialog input::placeholder { color: #606477; }
+.alarm-list { margin-top: 10px; }.alarm-row { display: flex; align-items: center; gap: 9px; padding: 9px 0; border-bottom: 1px solid #252839; }.alarm-row:last-child { border-bottom: 0; }.alarm-time-text { color: #e5e3f1; font: 14px var(--mono); }.alarm-row-copy { flex: 1; display: grid; gap: 3px; }.alarm-row-copy small { color: #888c9f; font-size: 9px; }.alarm-switch { width: 30px; height: 17px; padding: 2px; background: #34374a; border: 0; border-radius: 20px; cursor: pointer; }.alarm-switch span { display: block; width: 13px; height: 13px; background: #a5a8b9; border-radius: 50%; transition: transform .15s; }.alarm-switch.on { background: #427d69; }.alarm-switch.on span { background: #a7efd4; transform: translateX(13px); }.alarm-delete { padding: 4px; color: #666a7d; background: none; border: 0; cursor: pointer; }.alarm-delete:hover { color: #fa9194; }.empty-inline { padding: 13px 0 2px; color: #777b8f; font-size: 10px; line-height: 1.5; }.time-note { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 13px; padding: 17px 20px; background: #151625; }.time-note-icon { color: var(--mint); font-size: 17px; }.time-note strong { font: 500 12px var(--display); }.time-note p { margin: 5px 0 0; color: #888c9e; font-size: 10px; line-height: 1.5; }
+.notes-footer { display: flex; justify-content: space-between; margin-top: 8px; color: #74788b; font-size: 9px; }
+.task-dialog { width: min(440px, calc(100% - 32px)); padding: 0; color: var(--text); background: #151725; border: 1px solid #35384c; border-radius: 10px; box-shadow: 0 22px 90px #0009; }.task-dialog::backdrop { background: #070811bf; backdrop-filter: blur(4px); }.task-dialog form { display: grid; gap: 9px; padding: 23px; }.dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 9px; }.dialog-heading h2 { font-size: 19px; }.dialog-close { width: 27px; height: 27px; color: #999caf; background: #202333; border: 1px solid #34374a; border-radius: 5px; cursor: pointer; font-size: 18px; }.task-dialog input { width: 100%; }.form-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.form-two div { display: grid; gap: 8px; }.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.toast { position: fixed; z-index: 15; right: 24px; bottom: 23px; padding: 11px 15px; color: #dcefe7; background: #1d302c; border: 1px solid #3b6657; border-radius: 7px; box-shadow: 0 8px 30px #0005; font-size: 11px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s; }.toast.show { opacity: 1; transform: translateY(0); }
+.alarm-overlay { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; background: #090a13d9; backdrop-filter: blur(8px); }.ringing-card { display: grid; justify-items: center; width: min(350px, calc(100% - 32px)); padding: 32px 24px 26px; background: #171928; border: 1px solid #414056; border-radius: 12px; box-shadow: 0 20px 100px #000b; }.ringing-icon { margin-bottom: 15px; color: var(--mint); font-size: 32px; }.ringing-card h2 { margin-top: 8px; font-size: 26px; }.ringing-card p { margin: 9px 0 20px; color: #a0a3b5; font-size: 12px; }.ringing-card .primary-button { min-width: 120px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; clip-path: inset(50%); border: 0; }
+@media (min-width: 1500px) { .main-content { padding-right: 60px; padding-left: 60px; }.browser-header { margin-right: -60px; margin-left: -60px; padding-right: 60px; padding-left: 60px; } .view { padding-top: 42px; }.dashboard-grid { gap: 16px; }.clock-card { min-height: 244px; }.assignments-card { min-height: 277px; } }
+@media (max-width: 1100px) { .main-content { padding: 0 27px; }.browser-header { margin-right: -27px; margin-left: -27px; padding-right: 27px; padding-left: 27px; }.sidebar { width: 220px; }.main-content { margin-left: 220px; }.dashboard-grid { grid-template-columns: 1fr 1fr; }.clock-time { margin-top: 23px; }.assignments-card { min-height: 250px; } }
+@media (max-width: 760px) { .sidebar { display: none; }.main-content { margin-left: 0; padding: 0 22px; }.browser-header { margin-right: -22px; margin-left: -22px; padding-right: 22px; padding-left: 22px; }.browser-tabs { min-height: 40px; }.browser-tab { min-width: 128px; flex: 0 0 auto; }.view { padding-top: 28px; }.welcome-row { align-items: flex-start; }.welcome-row > .primary-button { margin-top: 7px; }.dashboard-grid { gap: 11px; }.clock-card, .assignments-card { padding-right: 17px; padding-left: 17px; }.clock-time { font-size: 43px; }.page-footer { font-size: 7px; }.page-footer span:last-child { text-align: right; }.clock-page-grid { grid-template-columns: 1fr; }.time-note { grid-column: auto; }.big-clock-card { min-height: 245px; }.big-clock { margin-top: 30px; }.alarm-card { min-height: 270px; } }
+@media (max-width: 520px) { .main-content { padding: 0 15px; }.browser-header { margin-right: -15px; margin-left: -15px; padding-right: 15px; padding-left: 15px; }.browser-tab { min-width: 120px; padding: 0 10px; }.view { padding-top: 24px; }.welcome-row { flex-wrap: wrap; align-items: center; margin-bottom: 19px; }.welcome-row > div { width: 100%; }.welcome-row > .primary-button { margin-top: 0; }.page-title-row { gap: 11px; }.page-title-row > .primary-button { margin-top: 0; }.dashboard-grid { grid-template-columns: 1fr; }.clock-card { min-height: 214px; }.assignments-card { min-height: 240px; }.assignment-summary { gap: 7px; }.summary-card { min-height: 69px; flex-direction: column; align-items: flex-start; gap: 7px; padding: 10px; }.summary-icon { display: none; }.summary-card small { font-size: 7px; letter-spacing: .7px; }.summary-card strong { font-size: 17px; }.all-assignments-card { padding: 16px 13px; }.all-assignments-card .section-heading { align-items: flex-start; flex-direction: column; }.filters { align-self: stretch; }.filter-button { flex: 1; }.task-subject { display: none; }.task-due { min-width: 54px; }.task-row { gap: 8px; }.page-footer { padding-top: 18px; }.page-footer span:last-child { max-width: 50%; }.alarm-input-row { flex-wrap: wrap; }.alarm-input-row input { flex-basis: 100%; }.alarm-input-row .primary-button { flex: 1; }.big-clock-card { min-height: 230px; padding: 21px; }.big-clock { font-size: 56px; }.task-dialog form { padding: 19px; }.form-two { grid-template-columns: 1fr; gap: 8px; }.toast { right: 15px; bottom: 15px; left: 15px; text-align: center; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+
+#view-clock { max-width: none; margin: 0 -44px; padding: 0; }
+.notes-workspace { display: grid; grid-template-columns: minmax(220px, .34fr) minmax(0, 1fr); gap: 14px; min-height: min(610px, calc(100vh - 270px)); }
+.settings-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(230px, .42fr); align-items: start; gap: 14px; }
+.settings-form { display: grid; gap: 13px; }
+.settings-card { padding: 20px 22px; }
+.settings-section-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 19px; }
+.settings-section-heading h2 { margin-top: 5px; font-size: 15px; }
+.settings-section-icon { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; color: #b4a9f4; background: #29263e; border: 1px solid #39344f; border-radius: 8px; font: 18px var(--mono); }
+.settings-section-icon.accent-icon { color: var(--mint); background: #20312e; border-color: #30483f; }
+.settings-section-icon.code-icon { font-size: 11px; font-weight: 500; }
+.settings-label { display: block; margin-bottom: 7px; color: #c3c4d1; font-size: 10px; font-weight: 500; }
+.settings-input { width: 100%; max-width: 420px; height: 39px; padding: 0 11px; color: var(--text); background: #0e101b; border: 1px solid #303347; border-radius: 6px; }
+.settings-input::placeholder { color: #65697d; }
+.settings-help { margin: 8px 0 0; color: #777b8f; font-size: 9px; line-height: 1.5; }
+.theme-options { display: grid; gap: 7px; margin: 0; padding: 0; border: 0; }
+.theme-option { position: relative; display: flex; align-items: center; gap: 11px; min-height: 57px; padding: 8px 11px; background: #10121e; border: 1px solid #282b3c; border-radius: 7px; cursor: pointer; }
+.theme-option:has(input:checked) { background: #1a1c2b; border-color: #55506d; box-shadow: inset 2px 0 var(--mint); }
+.theme-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.theme-option input:focus-visible + .theme-preview { outline: 2px solid var(--mint); outline-offset: 3px; }
+.theme-preview { width: 54px; height: 35px; flex: 0 0 54px; display: flex; align-items: flex-end; gap: 4px; padding: 6px; background: #10121e; border: 1px solid #ffffff16; border-radius: 5px; }
+.theme-preview i { width: 8px; height: 8px; background: #9ce8cd; border-radius: 2px; }
+.theme-preview i:nth-child(2) { height: 14px; }
+.theme-preview i:nth-child(3) { height: 19px; }
+.violet-preview i { background: #b5a4f3; }
+.amber-preview i { background: #e8b36e; }
+.theme-option > span:nth-of-type(2) { min-width: 0; flex: 1; display: grid; gap: 4px; }
+.theme-option strong { color: #d8d8e4; font-size: 10px; font-weight: 600; }
+.theme-option small { color: #818599; font-size: 9px; }
+.theme-check { color: var(--mint); font-size: 12px; opacity: 0; }
+.theme-option input:checked ~ .theme-check { opacity: 1; }
+.code-toggle-row { display: flex; align-items: center; gap: 14px; cursor: pointer; }
+.code-toggle-row > span:first-child { min-width: 0; flex: 1; display: grid; gap: 5px; }
+.code-toggle-row strong { color: #d8d8e4; font-size: 10px; font-weight: 600; }
+.code-toggle-row small { color: #818599; font-size: 9px; line-height: 1.5; }
+.code-toggle-row input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.toggle-track { width: 36px; height: 20px; flex: 0 0 36px; padding: 3px; background: #34374a; border: 1px solid #44475a; border-radius: 15px; transition: background .15s; }
+.toggle-track::after { display: block; width: 12px; height: 12px; background: #a5a8b9; border-radius: 50%; content: ""; transition: transform .15s, background .15s; }
+.code-toggle-row input:checked + .toggle-track { background: #427d69; border-color: #568b78; }
+.code-toggle-row input:checked + .toggle-track::after { background: #a7efd4; transform: translateX(15px); }
+.code-toggle-row input:focus-visible + .toggle-track { outline: 2px solid var(--mint); outline-offset: 3px; }
+.settings-code-sample { overflow-x: auto; margin: 17px 0 0; padding: 13px 14px; color: #c5c5d6; background: #0c0e18; border: 1px solid #282a3a; border-radius: 6px; font: 10px/1.8 var(--mono); }
+.code-keyword { color: #b8a8f5; }
+.code-string { color: #a2e4c4; }
+.settings-aside { position: sticky; top: 18px; min-height: 273px; padding: 20px; background: radial-gradient(ellipse at 100% 0%, #37304c5c, transparent 52%), linear-gradient(155deg, #171827, #121522); }
+.settings-aside-mark { display: grid; width: 48px; height: 48px; margin: 22px 0 16px; place-items: center; color: #b8a8f5; background: #29263e; border: 1px solid #39344f; border-radius: 10px; font: 20px var(--mono); }
+.settings-aside h2 { margin: 0 0 8px; font-size: 18px; }
+.settings-aside p { color: #9295a9; font-size: 10px; line-height: 1.7; }
+.settings-local { display: flex; align-items: center; gap: 8px; margin-top: 22px; color: #8c91a5; font: 8px var(--mono); letter-spacing: 1px; }
+.settings-local .live-pulse { width: 5px; height: 5px; }
+.settings-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 1px; }
+.settings-actions > span { color: #777b8f; font-size: 9px; }
+.settings-actions .primary-button { flex: 0 0 auto; }
+.notes-list-card, .note-editor-card { min-height: 470px; padding: 18px 20px; }
+.notes-list-card { background: linear-gradient(160deg, #141725, #111421); }
+.notes-list-heading { display: flex; align-items: center; justify-content: space-between; padding-bottom: 13px; border-bottom: 1px solid #25283a; }
+.notes-list-heading > span:last-child { min-width: 22px; padding: 3px 6px; color: #b8b0ed; background: #29263e; border-radius: 10px; font: 9px var(--mono); text-align: center; }
+.notes-list { display: grid; gap: 7px; margin-top: 12px; }
+.note-list-item { display: grid; gap: 6px; padding: 12px; color: #c6c7d4; background: transparent; border: 1px solid transparent; border-radius: 7px; cursor: pointer; text-align: left; }
+.note-list-item:hover { background: #1a1d2b; }
+.note-list-item.active { background: #202331; border-color: #34374c; box-shadow: inset 2px 0 var(--violet); }
+.note-list-item strong { overflow: hidden; font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.note-list-item > span { overflow: hidden; color: #888c9f; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.note-list-item small { color: #64697e; font: 8px var(--mono); }
+.notes-list-empty { padding: 18px 8px; color: #777b8f; font-size: 10px; line-height: 1.6; }
+.note-editor-card { display: flex; flex-direction: column; background: radial-gradient(ellipse at 100% 0%, #27243d48, transparent 40%), #121522; }
+.note-editor-top { display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 15px; border-bottom: 1px solid #25283a; }
+.note-editor-top > div { display: grid; gap: 6px; }
+.note-updated { color: #777b8f; font-size: 9px; }
+.note-delete-button { padding: 7px 9px; color: #cf9296; background: #2b1e27; border: 1px solid #49313d; border-radius: 5px; font-size: 9px; cursor: pointer; }
+.note-title-input { width: 100%; margin: 17px 0 10px; padding: 2px 0; color: #efeff7; background: transparent; border: 0; font: 600 24px var(--display); letter-spacing: -.6px; }
+.note-title-input::placeholder { color: #696d80; }
+.note-title-input:focus-visible { outline: 0; border-bottom: 1px solid var(--violet); }
+.note-title-input:disabled, .note-editor-card textarea:disabled { opacity: .45; }
+.note-editor-card textarea { width: 100%; min-height: 290px; flex: 1; padding: 13px 0; resize: vertical; color: #c8c9d6; background: transparent; border: 0; font: 12px/1.85 var(--sans); }
+.note-editor-card textarea::placeholder { color: #696d80; }
+.note-editor-card .notes-footer { padding-top: 9px; border-top: 1px solid #25283a; }
+.note-editor-card.empty .note-title-input, .note-editor-card.empty textarea, .note-editor-card.empty > .notes-footer { display: none; }
+.notes-editor-empty { display: grid; flex: 1; justify-items: center; align-content: center; gap: 10px; color: #85899d; text-align: center; }
+.notes-editor-empty > span:first-child { color: #b5a4ef; font-size: 26px; }
+.notes-editor-empty strong { color: #d5d5e1; font: 500 16px var(--display); }
+.notes-editor-empty > span:nth-of-type(2) { font-size: 10px; }
+.notes-editor-empty .primary-button { margin-top: 5px; }
+.clock-desktop {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: min(820px, calc(100svh - 150px));
+  min-height: 570px;
+  overflow: hidden;
+  background: #17182b url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAwIDExMDAiIGZpbGw9Im5vbmUiPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJza3kiIHgxPSI5MDAiIHkxPSIwIiB4Mj0iOTAwIiB5Mj0iMTEwMCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8c3RvcCBzdG9wLWNvbG9yPSIjMTAxNzJhIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iLjQyIiBzdG9wLWNvbG9yPSIjMjAyYzQ5Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iLjc4IiBzdG9wLWNvbG9yPSIjNTE0NzYwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2IwNzg2OSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iaGF6ZSIgeDE9IjkwMCIgeTE9IjQxMCIgeDI9IjkwMCIgeTI9Ijg1MCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8c3RvcCBzdG9wLWNvbG9yPSIjZGZiNjliIiBzdG9wLW9wYWNpdHk9IjAiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIuNTgiIHN0b3AtY29sb3I9IiNlMmFhOGEiIHN0b3Atb3BhY2l0eT0iLjIyIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2UyYWE4YSIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJzdHJlZXQiIHgxPSI5MDAiIHkxPSI4MjUiIHgyPSI5MDAiIHkyPSIxMTAwIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgIDxzdG9wIHN0b3AtY29sb3I9IiMyOTIzMzMiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMTAxMjFlIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJtb29uLWdsb3ciIGN4PSIwIiBjeT0iMCIgcj0iMSIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgwIDI0NSAtMjQ1IDAgMTM5MiAyMjQpIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgIDxzdG9wIHN0b3AtY29sb3I9IiNkZGQwZGYiIHN0b3Atb3BhY2l0eT0iLjIiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZGRkMGRmIiBzdG9wLW9wYWNpdHk9IjAiLz4KICAgIDwvcmFkaWFsR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdsYXNzIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgIDxzdG9wIHN0b3AtY29sb3I9IiMzMDM1NGMiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMTcxYjJkIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cGF0aCBmaWxsPSJ1cmwoI3NreSkiIGQ9Ik0wIDBoMTgwMHYxMTAwSDB6Ii8+CiAgPHBhdGggZmlsbD0idXJsKCNtb29uLWdsb3cpIiBkPSJNMTE0Ny0yMWg0OTB2NDkwaC00OTB6Ii8+CiAgPGNpcmNsZSBjeD0iMTM5MiIgY3k9IjIyNCIgcj0iNjciIGZpbGw9IiNlOWRiZGIiIGZpbGwtb3BhY2l0eT0iLjg4Ii8+CiAgPGNpcmNsZSBjeD0iMTQxNyIgY3k9IjE5OSIgcj0iNjciIGZpbGw9IiMyMDJiNDUiLz4KICA8cGF0aCBmaWxsPSJ1cmwoI2hhemUpIiBkPSJNMCA0NDFoMTgwMHY0ODRIMHoiLz4KICA8ZyBmaWxsPSIjZDdjN2Q2IiBmaWxsLW9wYWNpdHk9Ii42OCI+CiAgICA8cGF0aCBkPSJtMTQ0IDExOSAyIDcgNyAyLTcgMi0yIDctMi03LTctMiA3LTIgMi03Wk0zOTAgMjI5bDIgNiA2IDItNiAyLTIgNi0yLTYtNi0yIDYtMiAyLTZaTTY3MSAxMTBsMiA3IDcgMi03IDItMiA3LTItNy03LTIgNy0yIDItN1pNMTAyMyAyODhsMiA2IDYgMi02IDItMiA2LTItNi02LTIgNi0yIDItNlpNMTE4OCAxMDNsMiA3IDcgMi03IDItMiA3LTItNy03LTIgNy0yIDItN1pNMTU4NyAzODJsMiA2IDYgMi02IDItMiA2LTItNi02LTIgNi0yIDItNlpNOTE0IDE5N2wyIDUgNSAyLTUgMi0yIDUtMi01LTUtMiA1LTIgMi01WiIvPgogIDwvZz4KICA8ZyBmaWxsPSIjZjJkN2MxIiBmaWxsLW9wYWNpdHk9Ii43NSI+CiAgICA8Y2lyY2xlIGN4PSIyNzQiIGN5PSIxNjciIHI9IjIiLz48Y2lyY2xlIGN4PSI1NDUiIGN5PSIzMTQiIHI9IjIiLz48Y2lyY2xlIGN4PSI3NTQiIGN5PSIxODUiIHI9IjEuNSIvPgogICAgPGNpcmNsZSBjeD0iODc1IiBjeT0iNzUiIHI9IjIiLz48Y2lyY2xlIGN4PSIxMDgxIiBjeT0iMTk0IiByPSIxLjUiLz48Y2lyY2xlIGN4PSIxMjc0IiBjeT0iMzc1IiByPSIyIi8+CiAgICA8Y2lyY2xlIGN4PSIxNTE4IiBjeT0iMTA1IiByPSIyIi8+PGNpcmNsZSBjeD0iMTcxMyIgY3k9IjI3NCIgcj0iMS41Ii8+PGNpcmNsZSBjeD0iNzciIGN5PSIyOTgiIHI9IjEuNSIvPgogICAgPGNpcmNsZSBjeD0iNDUyIiBjeT0iODgiIHI9IjEuNSIvPjxjaXJjbGUgY3g9Ijc4MSIgY3k9IjM1OSIgcj0iMiIvPjxjaXJjbGUgY3g9IjExNjEiIGN5PSI1NSIgcj0iMS41Ii8+CiAgICA8Y2lyY2xlIGN4PSIxNzQ2IiBjeT0iNDkzIiByPSIyIi8+CiAgPC9nPgogIDxwYXRoIGQ9Ik0wIDY2OWMyMzAtNTAgMzg0IDEzIDU2OC0yNCAxOTgtNDAgMzM1LTY1IDUyNi05IDE5MCA1NiAzODAgMTcgNzA2LTQ3djQxMUgwVjY2OVoiIGZpbGw9IiMyOTJhNDAiIGZpbGwtb3BhY2l0eT0iLjU4Ii8+CiAgPHBhdGggZD0iTTAgNzU3YzI1MC01OCA0MTggNyA2MjktMjUgMjEwLTMyIDM2NS00NyA1NDAtNCAyMDIgNTAgNDAwIDIwIDYzMS00M3YzNDlIMFY3NTdaIiBmaWxsPSIjMjAyMjM4IiBmaWxsLW9wYWNpdHk9Ii44NCIvPgogIDxwYXRoIGZpbGw9InVybCgjc3RyZWV0KSIgZD0iTTAgODc1aDE4MDB2MjI1SDB6Ii8+CiAgPGc+CiAgICA8cGF0aCBkPSJNMCA1NzhoMTY3djI5N0gweiIgZmlsbD0iIzE3MWEyYiIvPgogICAgPHBhdGggZD0iTTE3IDYwM2gyOHY0OEgxN3pNNjQgNjAzaDI4djQ4SDY0ek0xMTIgNjAzaDI4djQ4aC0yOHpNMTcgNjc0aDI4djQ4SDE3ek02NCA2NzRoMjh2NDhINjR6TTExMiA2NzRoMjh2NDhoLTI4ek0xNyA3NDVoMjh2NDhIMTd6TTY0IDc0NWgyOHY0OEg2NHpNMTEyIDc0NWgyOHY0OGgtMjh6IiBmaWxsPSIjZDFhODc4IiBmaWxsLW9wYWNpdHk9Ii40OCIvPgogICAgPHBhdGggZD0iTTEzNyA1MDloMTk0djM2NkgxMzd6IiBmaWxsPSIjMWExZDMwIi8+CiAgICA8cGF0aCBkPSJNMTU4IDUzMmgzMXY1MWgtMzF6TTIxMSA1MzJoMzF2NTFoLTMxek0yNjQgNTMyaDMxdjUxaC0zMXpNMTU4IDYwN2gzMXY1MWgtMzF6TTIxMSA2MDdoMzF2NTFoLTMxek0yNjQgNjA3aDMxdjUxaC0zMXpNMTU4IDY4MmgzMXY1MWgtMzF6TTIxMSA2ODJoMzF2NTFoLTMxek0yNjQgNjgyaDMxdjUxaC0zMXpNMTU4IDc1N2gzMXY1MWgtMzF6TTIxMSA3NTdoMzF2NTFoLTMxek0yNjQgNzU3aDMxdjUxaC0zMXoiIGZpbGw9IiNlMGFkNzkiIGZpbGwtb3BhY2l0eT0iLjU3Ii8+CiAgICA8cGF0aCBkPSJNMzI3IDYzNWgxNTh2MjQwSDMyN3oiIGZpbGw9IiMxOTFjMmMiLz4KICAgIDxwYXRoIGQ9Ik0zNDkgNjU4aDI3djQ0aC0yN3pNMzk1IDY1OGgyN3Y0NGgtMjd6TTQ0MSA2NThoMjd2NDRoLTI3ek0zNDkgNzI1aDI3djQ0aC0yN3pNMzk1IDcyNWgyN3Y0NGgtMjd6TTQ0MSA3MjVoMjd2NDRoLTI3ek0zNDkgNzkyaDI3djQ0aC0yN3pNMzk1IDc5MmgyN3Y0NGgtMjd6TTQ0MSA3OTJoMjd2NDRoLTI3eiIgZmlsbD0iI2QyYTA2ZiIgZmlsbC1vcGFjaXR5PSIuNDgiLz4KICAgIDxwYXRoIGQ9Ik00NzQgNDIwaDIxM3Y0NTVINDc0eiIgZmlsbD0iIzE4MWIyZSIvPgogICAgPHBhdGggZD0iTTUwMCA0NDloMjl2NTVoLTI5ek01NTAgNDQ5aDI5djU1aC0yOXpNNjAxIDQ0OWgyOXY1NWgtMjl6TTUwMCA1MjZoMjl2NTVoLTI5ek01NTAgNTI2aDI5djU1aC0yOXpNNjAxIDUyNmgyOXY1NWgtMjl6TTUwMCA2MDNoMjl2NTVoLTI5ek01NTAgNjAzaDI5djU1aC0yOXpNNjAxIDYwM2gyOXY1NWgtMjl6TTUwMCA2ODBoMjl2NTVoLTI5ek01NTAgNjgwaDI5djU1aC0yOXpNNjAxIDY4MGgyOXY1NWgtMjl6TTUwMCA3NTdoMjl2NTVoLTI5ek02MDEgNzU3aDI5djU1aC0yOXoiIGZpbGw9IiNkZGIyN2QiIGZpbGwtb3BhY2l0eT0iLjU0Ii8+CiAgICA8cGF0aCBkPSJNNjUwIDUzMWgxNjh2MzQ0SDY1MHoiIGZpbGw9IiMyMDIyMzgiLz4KICAgIDxwYXRoIGQ9Ik02NzEgNTU0aDI3djQ3aC0yN3pNNzIwIDU1NGgyN3Y0N2gtMjd6TTc2OSA1NTRoMjd2NDdoLTI3ek02NzEgNjI2aDI3djQ3aC0yN3pNNzIwIDYyNmgyN3Y0N2gtMjd6TTc2OSA2MjZoMjd2NDdoLTI3ek02NzEgNjk4aDI3djQ3aC0yN3pNNzY5IDY5OGgyN3Y0N2gtMjd6TTY3MSA3NzBoMjd2NDdoLTI3ek03MjAgNzcwaDI3djQ3aC0yN3pNNzY5IDc3MGgyN3Y0N2gtMjd6IiBmaWxsPSIjY2E5YjcyIiBmaWxsLW9wYWNpdHk9Ii40NSIvPgogICAgPHBhdGggZD0iTTc5NSAzNzRoMTkwdjUwMUg3OTV6IiBmaWxsPSIjMTcxYjJlIi8+CiAgICA8cGF0aCBkPSJNODE3IDQwMmgzMXY1NmgtMzF6TTg2OSA0MDJoMzF2NTZoLTMxek05MjEgNDAyaDMxdjU2aC0zMXpNODE3IDQ4MGgzMXY1NmgtMzF6TTg2OSA0ODBoMzF2NTZoLTMxek05MjEgNDgwaDMxdjU2aC0zMXpNODE3IDU1OGgzMXY1NmgtMzF6TTg2OSA1NThoMzF2NTZoLTMxek05MjEgNTU4aDMxdjU2aC0zMXpNODE3IDYzNmgzMXY1NmgtMzF6TTkyMSA2MzZoMzF2NTZoLTMxek04MTcgNzE0aDMxdjU2aC0zMXpNODY5IDcxNGgzMXY1NmgtMzF6TTkyMSA3MTRoMzF2NTZoLTMxeiIgZmlsbD0iI2UwYjI3YiIgZmlsbC1vcGFjaXR5PSIuNTIiLz4KICAgIDxwYXRoIGQ9Ik05NzggNTY4aDE3M3YzMDdIOTc4eiIgZmlsbD0iIzFiMWUzMSIvPgogICAgPHBhdGggZD0iTTEwMDAgNTkxaDI4djQ3aC0yOHpNMTA1MCA1OTFoMjh2NDdoLTI4ek0xMTAwIDU5MWgyOHY0N2gtMjh6TTEwMDAgNjYzaDI4djQ3aC0yOHpNMTA1MCA2NjNoMjh2NDdoLTI4ek0xMTAwIDY2M2gyOHY0N2gtMjh6TTEwMDAgNzM1aDI4djQ3aC0yOHpNMTEwMCA3MzVoMjh2NDdoLTI4ek0xMDAwIDgwN2gyOHY0N2gtMjh6TTEwNTAgODA3aDI4djQ3aC0yOHpNMTEwMCA4MDdoMjh2NDdoLTI4eiIgZmlsbD0iI2Q4YTg3MSIgZmlsbC1vcGFjaXR5PSIuNDgiLz4KICAgIDxwYXRoIGQ9Ik0xMTM2IDQ1OGgxOTh2NDE3aC0xOTh6IiBmaWxsPSIjMTgxYjJlIi8+CiAgICA8cGF0aCBkPSJNMTE2MCA0ODNoMjl2NTRoLTI5ek0xMjExIDQ4M2gyOXY1NGgtMjl6TTEyNjIgNDgzaDI5djU0aC0yOXpNMTE2MCA1NjFoMjl2NTRoLTI5ek0xMjExIDU2MWgyOXY1NGgtMjl6TTEyNjIgNTYxaDI5djU0aC0yOXpNMTE2MCA2MzloMjl2NTRoLTI5ek0xMjYyIDYzOWgyOXY1NGgtMjl6TTExNjAgNzE3aDI5djU0aC0yOXpNMTIxMSA3MTdoMjl2NTRoLTI5ek0xMjYyIDcxN2gyOXY1NGgtMjl6TTExNjAgNzk1aDI5djU0aC0yOXpNMTIxMSA3OTVoMjl2NTRoLTI5ek0xMjYyIDc5NWgyOXY1NGgtMjl6IiBmaWxsPSIjZTJiNDdkIiBmaWxsLW9wYWNpdHk9Ii41MiIvPgogICAgPHBhdGggZD0iTTEzMTggNTk2aDE2NXYyNzloLTE2NXoiIGZpbGw9IiMxYzIwMzMiLz4KICAgIDxwYXRoIGQ9Ik0xMzQwIDYyMGgyN3Y0N2gtMjd6TTEzODggNjIwaDI3djQ3aC0yN3pNMTQzNiA2MjBoMjd2NDdoLTI3ek0xMzQwIDY5MmgyN3Y0N2gtMjd6TTEzODggNjkyaDI3djQ3aC0yN3pNMTQzNiA2OTJoMjd2NDdoLTI3ek0xMzQwIDc2NGgyN3Y0N2gtMjd6TTE0MzYgNzY0aDI3djQ3aC0yN3pNMTM0MCA4MzZoMjd2MjdoLTI3ek0xMzg4IDc2NGgyN3Y0N2gtMjd6IiBmaWxsPSIjZDlhOTcyIiBmaWxsLW9wYWNpdHk9Ii40NyIvPgogICAgPHBhdGggZD0iTTE0NjYgNDg5aDE5MXYzODZoLTE5MXoiIGZpbGw9IiMxNzFhMmMiLz4KICAgIDxwYXRoIGQ9Ik0xNDg5IDUxNmgyOXY1MWgtMjl6TTE1NDAgNTE2aDI5djUxaC0yOXpNMTU5MSA1MTZoMjl2NTFoLTI5ek0xNDg5IDU5MGgyOXY1MWgtMjl6TTE1NDAgNTkwaDI5djUxaC0yOXpNMTU5MSA1OTBoMjl2NTFoLTI5ek0xNDg5IDY2NGgyOXY1MWgtMjl6TTE1OTEgNjY0aDI5djUxaC0yOXpNMTQ4OSA3MzhoMjl2NTFoLTI5ek0xNTQwIDczOGgyOXY1MWgtMjl6TTE1OTEgNzM4aDI5djUxaC0yOXpNMTQ4OSA4MTJoMjl2NTFoLTI5ek0xNTQwIDgxMmgyOXY1MWgtMjl6TTE1OTEgODEyaDI5djUxaC0yOXoiIGZpbGw9IiNlMWI0N2EiIGZpbGwtb3BhY2l0eT0iLjUzIi8+CiAgICA8cGF0aCBkPSJNMTY0MSA2NDFoMTU5djIzNGgtMTU5eiIgZmlsbD0iIzFiMWUzMCIvPgogICAgPHBhdGggZD0iTTE2NjIgNjYzaDI3djQzaC0yN3pNMTcxMCA2NjNoMjd2NDNoLTI3ek0xNzU4IDY2M2gyN3Y0M2gtMjd6TTE2NjIgNzMwaDI3djQzaC0yN3pNMTcxMCA3MzBoMjd2NDNoLTI3ek0xNzU4IDczMGgyN3Y0M2gtMjd6TTE2NjIgNzk3aDI3djQzaC0yN3pNMTc1OCA3OTdoMjd2NDNoLTI3eiIgZmlsbD0iI2Q3YTM2ZCIgZmlsbC1vcGFjaXR5PSIuNDciLz4KICA8L2c+CiAgPHBhdGggZD0iTTAgODcwYzIxNC0yNCAzODItMTMgNTY5IDEgMTk4IDE1IDQwMyAyMCA2MDggMyAyMjItMTggNDE0LTIzIDYyMyAwdjIyNkgwVjg3MFoiIGZpbGw9InVybCgjc3RyZWV0KSIvPgogIDxwYXRoIGQ9Ik0wIDg3NWMyNDgtMTcgNDIzLTIgNTcxIDEwIDIyNCAxOCA0MDYgMTEgNjIxLTUgMjMxLTE3IDQyMy0xMCA2MDggNCIgc3Ryb2tlPSIjYmE4ZDhlIiBzdHJva2Utb3BhY2l0eT0iLjM4IiBzdHJva2Utd2lkdGg9IjUiLz4KICA8cGF0aCBkPSJNMTQ3IDkxNWgxMTNsLTQxIDdIMTc4bC0zMS03Wk0zMzQgOTQ0aDE2N2wtNDggOGgtNzVsLTQ0LThaTTcwNSA5MTNoMjI2bC01OSA3SDc2NGwtNTktN1pNMTEyNiA5NDZoMTQxbC00MyA4aC02MmwtMzYtOFpNMTQ1OCA5MTVoMjEybC01OCA4aC0xMDJsLTUyLThaIiBmaWxsPSIjZDlhMjdiIiBmaWxsLW9wYWNpdHk9Ii40MiIvPgogIDxwYXRoIGQ9Ik0wIDEwMTBjMjYxLTE4IDUwNi05IDcyNCAxOCAyODIgMzUgNjMxIDI5IDEwNzYtMTJ2ODRIMHYtOTBaIiBmaWxsPSIjMGQxMDFhIiBmaWxsLW9wYWNpdHk9Ii43Ii8+CiAgPGcgZmlsbD0iI2M4OGU4NyIgZmlsbC1vcGFjaXR5PSIuNjYiPgogICAgPHBhdGggZD0iTTIxMCA4ODdoN3Y1OWgtN3pNMjI1IDg4N2g0djQ1aC00ek00NDUgOTA3aDZ2NjFoLTZ6TTQ2MCA5MDdoNHY0NGgtNHpNNzk1IDg4OWg3djU1aC03ek04MTEgODg5aDR2NDJoLTR6TTExODAgODk1aDd2NThoLTd6TTExOTcgODk1aDR2NDNoLTR6TTE1MTUgODg2aDZ2NjFoLTZ6TTE1MzEgODg2aDR2NDZoLTR6Ii8+CiAgPC9nPgo8L3N2Zz4K") center 54% / cover no-repeat;
+  border: 1px solid #373248;
+  border-radius: 11px;
+  box-shadow: 0 20px 55px #0005;
+  transition: background-size .35s ease;
+}
+.clock-desktop.wallpaper-zoomed { background-size: 112% auto; }
+.clock-desktop:fullscreen { width: 100vw; height: 100vh; min-height: 0; border: 0; border-radius: 0; }
+.desktop-shade { position: absolute; z-index: -1; inset: 0; background: linear-gradient(180deg, #0b0d18a8 0%, #1013222e 23%, #14132124 60%, #0a0b15a8 100%), linear-gradient(90deg, #0c0d1870, transparent 65%); }
+.desktop-toolbar { position: absolute; z-index: 1; top: 27px; right: 34px; left: 34px; display: flex; align-items: flex-start; justify-content: space-between; gap: 22px; }
+.desktop-identity { display: flex; align-items: center; gap: 11px; color: #fff; text-shadow: 0 2px 12px #0008; }
+.desktop-identity-mark { color: #c2a5f4; font-size: 25px; }
+.desktop-identity > span:last-child { display: grid; gap: 4px; }
+.desktop-identity strong { font: 600 23px/1 var(--display); letter-spacing: -1px; }
+.desktop-identity small { color: #ffffffa8; font: 8px var(--mono); letter-spacing: 1.5px; }
+.wallpaper-clock { position: absolute; top: 49%; left: 50%; width: min(680px, calc(100% - 40px)); display: grid; justify-items: center; transform: translate(-50%, -50%); text-align: center; transition: left .35s ease, text-align .35s ease; }
+.wallpaper-greeting { margin-bottom: 15px; color: #fff; font: 500 clamp(19px, 2.2vw, 29px)/1.38 var(--display); text-shadow: 0 2px 18px #000c; }
+.wallpaper-greeting span { color: #ffffffdc; }
+.big-clock { display: flex; align-items: baseline; justify-content: center; gap: 12px; margin: 0; color: #fff; font: 600 clamp(76px, 12vw, 142px)/.95 var(--display); letter-spacing: -7px; text-shadow: 0 5px 24px #0009; }
+.big-clock span { color: #ffffffd9; font: 500 .34em var(--display); letter-spacing: 0; text-transform: uppercase; }
+.big-clock-date { margin-top: 15px; color: #ffffffed; font: 500 clamp(14px, 1.6vw, 20px) var(--display); text-shadow: 0 2px 15px #000c; }
+.desktop-dock { position: absolute; right: 27px; bottom: 23px; left: 27px; display: flex; align-items: flex-end; justify-content: space-between; gap: 15px; }
+.dock-group { display: flex; align-items: center; gap: 5px; padding: 5px; background: #1113217a; border: 1px solid #ffffff24; border-radius: 10px; box-shadow: 0 7px 25px #0004; backdrop-filter: blur(14px); }
+.dock-button { width: 38px; height: 38px; display: grid; place-items: center; padding: 0; color: #f6f1fb; background: transparent; border: 0; border-radius: 7px; cursor: pointer; font-size: 19px; transition: color .15s, background .15s, transform .15s; }
+.dock-button:hover { color: #fff; background: #ffffff22; transform: translateY(-2px); }
+.dock-button[aria-pressed="true"] { color: #dcc8ff; background: #ffffff20; }
+.alarm-panel { position: absolute; z-index: 2; right: 24px; bottom: 83px; width: min(350px, calc(100% - 36px)); max-height: min(600px, calc(100% - 130px)); overflow: auto; padding: 21px 22px; color: var(--text); background: #121421ed; border: 1px solid #ffffff35; border-radius: 10px; box-shadow: 0 16px 55px #0009; backdrop-filter: blur(18px); }
+.alarm-panel-heading { display: flex; align-items: center; justify-content: space-between; }
+.alarm-panel-heading h2 { margin-top: 5px; font-size: 16px; }
+.alarm-panel-close { width: 27px; height: 27px; color: #babac8; background: #ffffff10; border: 1px solid #ffffff1c; border-radius: 5px; cursor: pointer; font-size: 18px; }
+.desktop-dock .dock-button:focus-visible, .alarm-panel-close:focus-visible { outline-color: #e5d0ff; }
+.clock-desktop.clock-off-center .wallpaper-clock { left: 12%; justify-items: start; transform: translateY(-50%); text-align: left; }
+.clock-desktop.clock-off-center .big-clock { justify-content: flex-start; }
+
+@media (max-width: 1100px) {
+  #view-clock { margin-right: -27px; margin-left: -27px; }
+  .desktop-toolbar { right: 24px; left: 24px; }
+  .desktop-dock { right: 20px; left: 20px; }
+}
+@media (max-width: 760px) {
+  #view-clock { margin: 0 -22px; padding-top: 12px; }
+  .clock-desktop { height: calc(100svh - 154px); min-height: 570px; border-right: 0; border-left: 0; border-radius: 0; }
+  .desktop-toolbar { top: 20px; right: 18px; left: 18px; }
+  .desktop-identity strong { font-size: 19px; }
+  .wallpaper-clock { top: 48%; }
+  .desktop-dock { right: 15px; bottom: 17px; left: 15px; }
+  .dock-button { width: 34px; height: 36px; }
+  .alarm-panel { right: 14px; bottom: 75px; }
+}
+@media (max-width: 520px) {
+  #view-clock { margin: 0 -15px; padding-top: 8px; }
+  .clock-desktop { height: calc(100svh - 145px); min-height: 560px; background-position: 56% center; }
+  .desktop-toolbar { top: 17px; right: 13px; left: 13px; gap: 10px; }
+  .desktop-identity { gap: 7px; }
+  .desktop-identity-mark { font-size: 19px; }
+  .desktop-identity strong { font-size: 16px; }
+  .desktop-identity small { font-size: 6px; letter-spacing: 1px; }
+  .wallpaper-clock { top: 47%; width: calc(100% - 28px); }
+  .wallpaper-greeting { margin-bottom: 12px; font-size: 17px; }
+  .big-clock { gap: 6px; font-size: clamp(66px, 19vw, 94px); letter-spacing: -5px; }
+  .big-clock-date { margin-top: 11px; font-size: 14px; }
+  .desktop-dock { right: 10px; bottom: 12px; left: 10px; display: flex; justify-content: flex-end; }
+  .dock-group { gap: 2px; padding: 3px; }
+  .dock-button { width: 32px; height: 34px; font-size: 16px; }
+  .alarm-panel { right: 10px; bottom: 65px; }
+}
+@media (max-width: 760px) {
+  .notes-workspace { grid-template-columns: 1fr; }
+  .notes-list-card { min-height: 170px; }
+  .note-editor-card { min-height: 390px; }
+  .note-editor-card textarea { min-height: 230px; }
+  .settings-layout { grid-template-columns: 1fr; }
+  .settings-aside { position: static; min-height: 200px; }
+}
+@media (max-width: 520px) {
+  .notes-list-card, .note-editor-card { padding: 15px; }
+  .note-title-input { font-size: 21px; }
+  .settings-card, .settings-aside { padding: 16px; }
+  .settings-actions { align-items: flex-start; flex-direction: column; }
+}
+
+html[data-theme="violet"] { --mint: #c3b4ff; --mint-bright: #ab95ff; --violet: #d0c2ff; --bg: #0d0b19; --sidebar: #110e1d; --surface: #151222; --surface-raised: #1a1629; --surface-soft: #181425; --border: #302942; --border-soft: #29233a; }
+html[data-theme="amber"] { --mint: #f0c27d; --mint-bright: #e7ae63; --violet: #d5b08b; --bg: #100e12; --sidebar: #141116; --surface: #19151a; --surface-raised: #201a20; --surface-soft: #1b171d; --border: #332831; --border-soft: #2b232a; }
+html.code-mode .card-kicker::before { color: var(--mint); content: "// "; }
+html.code-mode .sidebar-label::before { color: var(--mint); content: "$ "; }
+
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Main navigation">
+        <a class="brand" href="#" data-view="dashboard" aria-label="Afterhours home">
+          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span>afterhours<span class="brand-dot">.</span></span>
+        </a>
+        <div class="sidebar-label">WORKSPACE</div>
+        <nav class="nav-list">
+          <button class="nav-item active" data-view="dashboard"><span class="nav-icon">⌂</span><span>Overview</span><span class="nav-indicator"></span></button>
+          <button class="nav-item" data-view="assignments"><span class="nav-icon">▤</span><span>Assignments</span><span class="nav-count" id="nav-task-count">0</span></button>
+          <button class="nav-item" data-view="clock"><span class="nav-icon">◷</span><span>Clock &amp; alarms</span></button>
+          <button class="nav-item" data-view="notes"><span class="nav-icon">✎</span><span>Notes</span></button>
+          <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span><span>Settings</span></button>
+        </nav>
+        <div class="sidebar-bottom">
+          <button class="profile-button" type="button" data-view="settings" aria-label="Open settings">
+            <span class="avatar" id="profile-avatar">J</span><span class="profile-copy"><strong id="profile-name">Jamie Parker</strong><small>Student account</small></span><span class="profile-more">···</span>
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="browser-header">
+          <nav class="browser-tabs" aria-label="Study planner features">
+            <button class="browser-tab active" data-view="dashboard" aria-current="page"><span class="browser-tab-icon overview-icon" aria-hidden="true">⌂</span><span class="browser-tab-label">Overview</span></button>
+            <button class="browser-tab" data-view="assignments"><span class="browser-tab-icon assignments-icon" aria-hidden="true">▤</span><span class="browser-tab-label">Assignments</span><span class="browser-tab-count" id="browser-task-count">3</span></button>
+            <button class="browser-tab" data-view="clock"><span class="browser-tab-icon clock-icon" aria-hidden="true">◷</span><span class="browser-tab-label">Clock &amp; alarms</span></button>
+            <button class="browser-tab" data-view="notes"><span class="browser-tab-icon notes-icon" aria-hidden="true">✎</span><span class="browser-tab-label">Notes</span></button>
+            <button class="browser-tab" data-view="settings"><span class="browser-tab-icon settings-icon" aria-hidden="true">⚙</span><span class="browser-tab-label">Settings</span></button>
+            <span class="browser-tabs-spacer" aria-hidden="true"></span>
+            <span class="browser-tabs-caption">YOUR STUDY SPACE</span>
+          </nav>
+        </header>
+
+        <section class="view active" id="view-dashboard" aria-labelledby="welcome-title">
+          <div class="welcome-row">
+            <div><div class="eyebrow"><span class="eyebrow-line"></span> YOUR STUDY SPACE</div><h1 id="welcome-title">Good evening, <span id="dashboard-name">Jamie</span> <span class="wave">✳</span></h1><p class="welcome-subtitle">A little progress tonight goes a long way.</p></div>
+            <button class="primary-button" id="new-task-button"><span>＋</span> New assignment</button>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="card clock-card">
+              <div class="clock-card-head"><div class="card-kicker">LOCAL TIME</div><span class="live-label"><i></i> LIVE</span></div>
+              <div class="clock-time" id="dashboard-clock">--:--<span>--</span></div>
+              <div class="clock-date" id="dashboard-date"></div>
+              <div class="clock-card-bottom"><span class="moon-icon">☾</span><span>Perfect time to find your flow</span></div>
+            </section>
+
+            <section class="card assignments-card">
+              <div class="section-heading"><div><div class="card-kicker">ON YOUR RADAR</div><h2>Upcoming assignments</h2></div></div>
+              <div class="task-list" id="dashboard-task-list"></div>
+              <div class="empty-state hidden" id="dashboard-empty"><span class="empty-icon">✧</span><strong>Your plate is clear.</strong><span>Add an assignment when something comes up.</span></div>
+            </section>
+
+          </div>
+          <footer class="page-footer"><span>MADE FOR THE QUIET HOURS</span><span>Take a breath. You’re right where you need to be. <span class="footer-moon">☾</span></span></footer>
+        </section>
+
+        <section class="view" id="view-assignments" aria-labelledby="assignments-title">
+          <div class="welcome-row page-title-row"><div><div class="eyebrow"><span class="eyebrow-line"></span> STAY ON TRACK</div><h1 id="assignments-title">Assignments</h1><p class="welcome-subtitle">Every big thing is just a few small things.</p></div><button class="primary-button" id="new-task-button-page"><span>＋</span> New assignment</button></div>
+          <div class="assignment-summary"><div class="summary-card"><span class="summary-icon violet">▤</span><div><small>OPEN TASKS</small><strong id="open-task-total">0</strong></div></div><div class="summary-card"><span class="summary-icon orange">◷</span><div><small>DUE THIS WEEK</small><strong id="due-week-total">0</strong></div></div><div class="summary-card"><span class="summary-icon green">✓</span><div><small>COMPLETED</small><strong id="done-task-total">0</strong></div></div></div>
+          <section class="card all-assignments-card"><div class="section-heading"><div><div class="card-kicker">YOUR TASK LIST</div><h2>Everything in one place</h2></div><div class="filters" role="group" aria-label="Filter assignments"><button class="filter-button active" data-filter="all">All</button><button class="filter-button" data-filter="open">To do</button><button class="filter-button" data-filter="done">Done</button></div></div><div class="full-task-list" id="full-task-list"></div><div class="empty-state hidden" id="assignments-empty"><span class="empty-icon">✧</span><strong>Nothing on the list yet.</strong><span>Add your first assignment to start planning.</span></div></section>
+          <footer class="page-footer"><span>MADE FOR THE QUIET HOURS</span><span>One task at a time. <span class="footer-moon">☾</span></span></footer>
+        </section>
+
+        <section class="view" id="view-clock" aria-labelledby="clock-title">
+          <h1 class="sr-only" id="clock-title">Clock desktop</h1>
+          <div class="clock-desktop" id="clock-desktop">
+            <div class="desktop-shade" aria-hidden="true"></div>
+            <div class="desktop-toolbar">
+              <div class="desktop-identity"><span class="desktop-identity-mark">✦</span><span><strong>afterhours</strong><small>A LITTLE SPACE TO FOCUS</small></span></div>
+            </div>
+            <div class="wallpaper-clock">
+                <div class="wallpaper-greeting" id="wallpaper-greeting">Good evening, Jamie.<br /><span>Keep going. You’re doing great.</span></div>
+                <div class="big-clock" id="page-clock">--:--<span>--</span></div>
+                <div class="big-clock-date" id="page-clock-date"></div>
+            </div>
+            <div class="desktop-dock">
+              <div class="dock-group dock-group-right" role="group" aria-label="Wallpaper controls">
+                <button class="dock-button" id="center-clock" type="button" aria-pressed="true" aria-label="Center the clock" title="Center clock"><span aria-hidden="true">⊙</span></button>
+                <button class="dock-button" id="toggle-alarm-panel" type="button" aria-expanded="false" aria-controls="alarm-panel" aria-label="Open alarms" title="Alarms"><span aria-hidden="true">◷</span></button>
+                <button class="dock-button" id="zoom-wallpaper" type="button" aria-pressed="false" aria-label="Zoom wallpaper" title="Zoom wallpaper"><span aria-hidden="true">⌕</span></button>
+                <button class="dock-button" id="fullscreen-clock" type="button" aria-label="Enter fullscreen" title="Fullscreen"><span aria-hidden="true">⛶</span></button>
+              </div>
+            </div>
+            <aside class="alarm-panel hidden" id="alarm-panel" aria-label="Alarm settings">
+              <div class="alarm-panel-heading"><div><div class="card-kicker">GENTLE REMINDERS</div><h2>Your alarms</h2></div><button class="alarm-panel-close" id="close-alarm-panel" type="button" aria-label="Close alarms">×</button></div>
+              <form id="alarm-form" class="alarm-form"><label for="alarm-time">Set a time</label><div class="alarm-input-row"><input id="alarm-time" type="time" required aria-label="Alarm time" /><button class="primary-button" type="submit"><span>＋</span> Add alarm</button></div><label class="alarm-label" for="alarm-label">Label <span>(optional)</span></label><input id="alarm-label" class="alarm-name-input" type="text" maxlength="32" placeholder="e.g. Take a break" /></form>
+              <div class="alarm-list" id="alarm-list"></div><div class="empty-inline" id="alarm-empty">No alarms set. Add one to remind yourself to pause, focus, or call it a night.</div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="view-notes" aria-labelledby="notes-title">
+          <div class="welcome-row page-title-row"><div><div class="eyebrow"><span class="eyebrow-line"></span> YOUR NOTEBOOK</div><h1 id="notes-title">Notes</h1><p class="welcome-subtitle">Keep your class notes, reminders, and ideas together.</p></div><button class="primary-button" id="new-note-button" type="button"><span>＋</span> New note</button></div>
+          <div class="notes-workspace">
+            <aside class="card notes-list-card" aria-label="Your notes">
+              <div class="notes-list-heading"><span class="card-kicker">ALL NOTES</span><span id="notes-total">0</span></div>
+              <div class="notes-list" id="notes-list"></div>
+              <div class="notes-list-empty hidden" id="notes-list-empty">Your notes will show up here.</div>
+            </aside>
+            <section class="card note-editor-card" aria-label="Note editor">
+              <div class="note-editor-top"><div><div class="card-kicker">NOTE EDITOR</div><span class="note-updated" id="note-updated">Saved on this device</span></div><button class="note-delete-button hidden" id="delete-note-button" type="button">Delete note</button></div>
+              <label class="sr-only" for="note-title-input">Note title</label>
+              <input class="note-title-input" id="note-title-input" type="text" maxlength="80" placeholder="Untitled note" />
+              <label class="sr-only" for="study-notes">Note text</label>
+              <textarea id="study-notes" placeholder="Start writing your notes here…"></textarea>
+              <div class="notes-footer"><span id="notes-status">Saved on this device</span><span id="notes-count">0 characters</span></div>
+              <div class="notes-editor-empty hidden" id="notes-editor-empty"><span>✎</span><strong>No note selected</strong><span>Create a note to get started.</span><button class="primary-button" id="empty-new-note" type="button">Create a note</button></div>
+            </section>
+          </div>
+          <footer class="page-footer"><span>MADE FOR THE QUIET HOURS</span><span>Notes save automatically on this device. <span class="footer-moon">☾</span></span></footer>
+        </section>
+
+        <section class="view" id="view-settings" aria-labelledby="settings-title">
+          <div class="welcome-row page-title-row"><div><div class="eyebrow"><span class="eyebrow-line"></span> MAKE IT YOURS</div><h1 id="settings-title">Settings</h1><p class="welcome-subtitle">Tune your study space until it feels like home.</p></div></div>
+          <div class="settings-layout">
+            <form class="settings-form" id="settings-form">
+              <section class="card settings-card">
+                <div class="settings-section-heading"><span class="settings-section-icon">⌘</span><div><div class="card-kicker">YOUR PROFILE</div><h2>Who’s studying?</h2></div></div>
+                <label class="settings-label" for="settings-name">Display name</label>
+                <input class="settings-input" id="settings-name" name="name" type="text" maxlength="32" autocomplete="name" placeholder="Your name" />
+                <p class="settings-help">We’ll use your name in your greeting and profile.</p>
+              </section>
+              <section class="card settings-card">
+                <div class="settings-section-heading"><span class="settings-section-icon accent-icon">◉</span><div><div class="card-kicker">COLOR SCHEME</div><h2>Pick your night</h2></div></div>
+                <fieldset class="theme-options">
+                  <legend class="sr-only">Choose a dark accent palette</legend>
+                  <label class="theme-option"><input type="radio" name="theme" value="midnight" /><span class="theme-preview midnight-preview"><i></i><i></i><i></i></span><span><strong>Midnight</strong><small>Cool mint · current classic</small></span><span class="theme-check">✓</span></label>
+                  <label class="theme-option"><input type="radio" name="theme" value="violet" /><span class="theme-preview violet-preview"><i></i><i></i><i></i></span><span><strong>Violet dusk</strong><small>Lavender · dreamy focus</small></span><span class="theme-check">✓</span></label>
+                  <label class="theme-option"><input type="radio" name="theme" value="amber" /><span class="theme-preview amber-preview"><i></i><i></i><i></i></span><span><strong>Amber terminal</strong><small>Warm gold · late-night code</small></span><span class="theme-check">✓</span></label>
+                </fieldset>
+                <p class="settings-help">Every palette keeps the page comfortably dark.</p>
+              </section>
+              <section class="card settings-card code-settings-card">
+                <div class="settings-section-heading"><span class="settings-section-icon code-icon">&lt;/&gt;</span><div><div class="card-kicker">EDITOR FEEL</div><h2>Make it feel like code.</h2></div></div>
+                <label class="code-toggle-row" for="settings-code-accents"><span><strong>Code accents</strong><small>Add subtle terminal-style labels around the workspace.</small></span><input id="settings-code-accents" name="codeAccents" type="checkbox" /><span class="toggle-track" aria-hidden="true"></span></label>
+                <pre class="settings-code-sample"><code><span class="code-keyword">const</span> tonight = <span class="code-string">"one step at a time"</span>;
+<span class="code-keyword">while</span> (you.keepGoing) {
+  makeProgress();
+}</code></pre>
+              </section>
+              <div class="settings-actions"><span id="settings-status" role="status">Settings are saved on this device.</span><button class="primary-button" type="submit"><span>✓</span> Save settings</button></div>
+            </form>
+            <aside class="settings-aside card"><div class="card-kicker">YOUR WORKSPACE</div><div class="settings-aside-mark" aria-hidden="true">⌘</div><h2>A little more you.</h2><p>Your planner stays private on this device. Your name and look are easy to change whenever your mood shifts.</p><div class="settings-local"><span class="live-pulse"></span> LOCAL &amp; PERSONAL</div></aside>
+          </div>
+          <footer class="page-footer"><span>MADE FOR THE QUIET HOURS</span><span>Configured just for you. <span class="footer-moon">☾</span></span></footer>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="task-dialog" class="task-dialog" aria-labelledby="task-dialog-title">
+      <form id="task-form" method="dialog">
+        <div class="dialog-heading"><div><div class="card-kicker">MAKE A PLAN</div><h2 id="task-dialog-title">New assignment</h2></div><button class="dialog-close" type="button" id="close-task-dialog" aria-label="Close">×</button></div>
+        <label for="task-title">What needs doing?</label><input id="task-title" name="title" type="text" maxlength="80" placeholder="e.g. Finish biology chapter 4" required />
+        <div class="form-two"><div><label for="task-subject">Subject</label><input id="task-subject" name="subject" type="text" maxlength="24" placeholder="e.g. Biology" /></div><div><label for="task-due">Due date</label><input id="task-due" name="due" type="date" /></div></div>
+        <div class="dialog-actions"><button class="secondary-button" type="button" id="cancel-task">Cancel</button><button class="primary-button" type="submit">Add assignment <span>→</span></button></div>
+      </form>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="alarm-overlay hidden" id="alarm-overlay" role="alertdialog" aria-modal="true" aria-labelledby="alarm-ringing-title"><div class="ringing-card"><span class="ringing-icon">◷</span><div class="card-kicker">A GENTLE REMINDER</div><h2 id="alarm-ringing-title">It’s time.</h2><p id="ringing-label"></p><button class="primary-button" id="dismiss-alarm">Got it</button></div></div>
+    <script>
+(() => {
+  "use strict";
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  const storageKey = "afterhours-study-planner-v1";
+  const dateOnly = (date) => {
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  };
+  const addDays = (days) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return dateOnly(date);
+  };
+  const starterState = () => ({
+    tasks: [
+      { id: "starter-bio", title: "Read chapter 6", subject: "Biology", due: addDays(1), done: false },
+      { id: "starter-math", title: "Problem set 04", subject: "Linear algebra", due: addDays(2), done: false },
+      { id: "starter-essay", title: "Draft essay outline", subject: "Literature", due: addDays(4), done: false },
+    ],
+    alarms: [],
+    notes: [],
+    settings: { name: "Jamie", theme: "midnight", codeAccents: true },
+  });
+  const readState = () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey));
+      if (saved && Array.isArray(saved.tasks) && Array.isArray(saved.alarms)) {
+        const loaded = { ...starterState(), ...saved };
+        delete loaded.goals;
+        delete loaded.studiedSeconds;
+        if (typeof loaded.notes === "string") {
+          loaded.notes = loaded.notes.trim() ? [{ id: "quick-notes", title: "Quick notes", content: loaded.notes, updatedAt: Date.now() }] : [];
+        } else if (!Array.isArray(loaded.notes)) {
+          loaded.notes = [];
+        }
+        loaded.settings = {
+          ...starterState().settings,
+          ...(saved.settings && typeof saved.settings === "object" ? saved.settings : {}),
+        };
+        if (!["midnight", "violet", "amber"].includes(loaded.settings.theme)) loaded.settings.theme = "midnight";
+        loaded.settings.name = String(loaded.settings.name || "Jamie").trim().slice(0, 32) || "Jamie";
+        loaded.settings.codeAccents = loaded.settings.codeAccents !== false;
+        return loaded;
+      }
+    } catch {
+      // Fall back to a fresh planner if stored data is unavailable or invalid.
+    }
+    return starterState();
+  };
+  let state = readState();
+  let activeNoteId = state.notes[0]?.id || null;
+  let activeFilter = "all";
+  let toastTimeout;
+  let alarmAudioContext = null;
+  let alarmAudioInterval = null;
+  let ringingAlarm = null;
+  const firedAlarms = new Set();
+
+  const save = () => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+      return true;
+    } catch {
+      showToast("Couldn’t save on this device.");
+      return false;
+    }
+  };
+  const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[character]);
+  const formatDue = (due) => {
+    if (!due) return "No due date";
+    const today = dateOnly(new Date());
+    const tomorrow = addDays(1);
+    if (due === today) return "Today";
+    if (due === tomorrow) return "Tomorrow";
+    const parsed = new Date(`${due}T12:00:00`);
+    return parsed.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
+  const dueClass = (due, done) => {
+    if (!due || done) return "";
+    if (due < dateOnly(new Date())) return "overdue";
+    if (due <= addDays(1)) return "urgent";
+    return "";
+  };
+  const showToast = (message) => {
+    const toast = $("#toast");
+    toast.textContent = message;
+    toast.classList.add("show");
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove("show"), 2600);
+  };
+  const dueLabel = (task) => {
+    const meta = task.subject ? escapeHtml(task.subject) : "Personal";
+    return `${meta} · ${formatDue(task.due)}`;
+  };
+
+  function renderTasks() {
+    const activeTasks = state.tasks.filter((task) => !task.done).sort((a, b) => {
+      if (!a.due) return 1;
+      if (!b.due) return -1;
+      return a.due.localeCompare(b.due);
+    });
+    const dashboardList = $("#dashboard-task-list");
+    dashboardList.innerHTML = activeTasks.slice(0, 3).map((task) => `
+      <div class="task-row" data-task-id="${escapeHtml(task.id)}">
+        <button class="task-check" data-action="toggle-task" aria-label="Mark ${escapeHtml(task.title)} complete"></button>
+        <div class="task-copy"><span class="task-name">${escapeHtml(task.title)}</span><span class="task-meta">${dueLabel(task)}</span></div>
+        ${task.subject ? `<span class="task-subject">${escapeHtml(task.subject)}</span>` : ""}
+        <span class="task-due ${dueClass(task.due, task.done)}">${formatDue(task.due)}</span>
+      </div>`).join("");
+    $("#dashboard-empty").classList.toggle("hidden", activeTasks.length > 0);
+    dashboardList.classList.toggle("hidden", activeTasks.length === 0);
+
+    const filtered = state.tasks.filter((task) => activeFilter === "all" || (activeFilter === "done" ? task.done : !task.done))
+      .sort((a, b) => Number(a.done) - Number(b.done) || (a.due || "9999").localeCompare(b.due || "9999"));
+    $("#full-task-list").innerHTML = filtered.map((task) => `
+      <div class="task-row ${task.done ? "completed" : ""}" data-task-id="${escapeHtml(task.id)}">
+        <button class="task-check" data-action="toggle-task" aria-label="${task.done ? "Mark" : "Mark"} ${escapeHtml(task.title)} ${task.done ? "to do" : "complete"}">${task.done ? "✓" : ""}</button>
+        <div class="task-copy"><span class="task-name">${escapeHtml(task.title)}</span><span class="task-meta">${dueLabel(task)}</span></div>
+        ${task.subject ? `<span class="task-subject">${escapeHtml(task.subject)}</span>` : ""}
+        <span class="task-due ${dueClass(task.due, task.done)}">${formatDue(task.due)}</span>
+        <button class="task-delete" data-action="delete-task" aria-label="Delete ${escapeHtml(task.title)}">×</button>
+      </div>`).join("");
+    $("#assignments-empty").classList.toggle("hidden", filtered.length > 0);
+    $("#full-task-list").classList.toggle("hidden", filtered.length === 0);
+
+    const openCount = state.tasks.filter((task) => !task.done).length;
+    $("#nav-task-count").textContent = openCount;
+    $("#browser-task-count").textContent = openCount;
+    $("#open-task-total").textContent = openCount;
+    $("#done-task-total").textContent = state.tasks.filter((task) => task.done).length;
+    $("#due-week-total").textContent = state.tasks.filter((task) => !task.done && task.due && task.due >= dateOnly(new Date()) && task.due <= addDays(7)).length;
+  }
+
+  function renderNotes() {
+    renderNotesList();
+    const note = state.notes.find((item) => item.id === activeNoteId);
+    const editor = $(".note-editor-card");
+    editor.classList.toggle("empty", !note);
+    $("#note-title-input").disabled = !note;
+    $("#study-notes").disabled = !note;
+    $("#note-title-input").value = note?.title || "";
+    $("#study-notes").value = note?.content || "";
+    $("#delete-note-button").classList.toggle("hidden", !note);
+    $("#notes-editor-empty").classList.toggle("hidden", Boolean(note));
+    $("#notes-status").textContent = note ? "Saved on this device" : "";
+    updateNotesCount();
+  }
+
+  function applySettings(settings = state.settings) {
+    document.documentElement.dataset.theme = settings.theme;
+    document.documentElement.classList.toggle("code-mode", settings.codeAccents);
+    const name = settings.name || "Jamie";
+    $("#profile-name").textContent = name;
+    $("#profile-avatar").textContent = name.trim().charAt(0).toUpperCase();
+    $("#dashboard-name").textContent = name;
+    $("#wallpaper-greeting").innerHTML = `${currentGreeting()}, ${escapeHtml(name)}.<br /><span>Keep going. You’re doing great.</span>`;
+  }
+
+  function currentGreeting() {
+    const hour = new Date().getHours();
+    return hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  }
+
+  function renderSettings() {
+    $("#settings-name").value = state.settings.name;
+    $$("#settings-form input[name=\"theme\"]").forEach((input) => {
+      input.checked = input.value === state.settings.theme;
+    });
+    $("#settings-code-accents").checked = state.settings.codeAccents;
+    applySettings();
+  }
+
+  function saveActiveNote() {
+    const note = state.notes.find((item) => item.id === activeNoteId);
+    if (!note) return;
+    note.title = $("#note-title-input").value.trim() || "Untitled note";
+    note.content = $("#study-notes").value;
+    note.updatedAt = Date.now();
+    save();
+    renderNotesList();
+    $("#note-updated").textContent = `Edited ${new Date(note.updatedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+  }
+
+  function renderNotesList() {
+    const list = $("#notes-list");
+    list.innerHTML = state.notes.map((note) => {
+      const preview = note.content.trim().replace(/\s+/g, " ").slice(0, 72) || "No note text yet";
+      const updated = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
+      return `<button class="note-list-item ${note.id === activeNoteId ? "active" : ""}" type="button" data-note-id="${escapeHtml(note.id)}" aria-current="${note.id === activeNoteId ? "true" : "false"}">
+        <strong>${escapeHtml(note.title || "Untitled note")}</strong><span>${escapeHtml(preview)}</span><small>${updated}</small>
+      </button>`;
+    }).join("");
+    $("#notes-total").textContent = state.notes.length;
+    $("#notes-list-empty").classList.toggle("hidden", state.notes.length > 0);
+  }
+
+  function createNote() {
+    const note = { id: crypto.randomUUID ? crypto.randomUUID() : `note-${Date.now()}`, title: "Untitled note", content: "", updatedAt: Date.now() };
+    state.notes.unshift(note);
+    activeNoteId = note.id;
+    save();
+    renderNotes();
+    $("#note-title-input").focus();
+    $("#note-title-input").select();
+  }
+
+  function renderAlarms() {
+    const list = $("#alarm-list");
+    list.innerHTML = state.alarms.slice().sort((a, b) => a.time.localeCompare(b.time)).map((alarm) => {
+      const [hours, minutes] = alarm.time.split(":").map(Number);
+      const timeText = new Date(2000, 0, 1, hours, minutes).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      return `<div class="alarm-row" data-alarm-id="${escapeHtml(alarm.id)}">
+        <div class="alarm-row-copy"><span class="alarm-time-text">${timeText}</span><small>${escapeHtml(alarm.label || "Study reminder")}</small></div>
+        <button class="alarm-switch ${alarm.enabled ? "on" : ""}" data-action="toggle-alarm" role="switch" aria-checked="${alarm.enabled}" aria-label="${alarm.enabled ? "Disable" : "Enable"} alarm at ${timeText}"><span></span></button>
+        <button class="alarm-delete" data-action="delete-alarm" aria-label="Delete alarm at ${timeText}">×</button>
+      </div>`;
+    }).join("");
+    $("#alarm-empty").classList.toggle("hidden", state.alarms.length > 0);
+  }
+
+  function updateClock() {
+    const current = new Date();
+    const clockParts = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: true }).formatToParts(current);
+    const time = `${clockParts.find((part) => part.type === "hour").value}:${clockParts.find((part) => part.type === "minute").value}`;
+    const suffix = clockParts.find((part) => part.type === "dayPeriod")?.value.toLowerCase() || "";
+    $("#dashboard-clock").innerHTML = `${time}<span>${suffix}</span>`;
+    $("#page-clock").innerHTML = `${time}<span>${suffix}</span>`;
+    const date = current.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+    $("#dashboard-date").textContent = date;
+    $("#page-clock-date").textContent = date;
+    $("#wallpaper-greeting").innerHTML = `${currentGreeting()}, ${escapeHtml(state.settings.name)}.<br /><span>Keep going. You’re doing great.</span>`;
+    checkAlarms(current);
+  }
+
+  function playChime() {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      alarmAudioContext ||= new AudioContextClass();
+      if (alarmAudioContext.state === "suspended") alarmAudioContext.resume();
+      const oscillator = alarmAudioContext.createOscillator();
+      const gain = alarmAudioContext.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = 660;
+      gain.gain.setValueAtTime(0.0001, alarmAudioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.12, alarmAudioContext.currentTime + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, alarmAudioContext.currentTime + 0.55);
+      oscillator.connect(gain);
+      gain.connect(alarmAudioContext.destination);
+      oscillator.start();
+      oscillator.stop(alarmAudioContext.currentTime + 0.56);
+    } catch {
+      showToast("Your reminder is ready.");
+    }
+  }
+
+  function ringAlarm(alarms) {
+    ringingAlarm = alarms;
+    const labels = alarms.map((alarm) => alarm.label).filter(Boolean);
+    $("#ringing-label").textContent = labels.length ? labels.join(" · ") : "A little reminder, just for you.";
+    $("#alarm-overlay").classList.remove("hidden");
+    $("#dismiss-alarm").focus();
+    playChime();
+    alarmAudioInterval = setInterval(playChime, 1800);
+  }
+
+  function checkAlarms(current) {
+    const minute = `${String(current.getHours()).padStart(2, "0")}:${String(current.getMinutes()).padStart(2, "0")}`;
+    const today = dateOnly(current);
+    if (ringingAlarm) return;
+    const dueAlarms = state.alarms.filter((item) => item.enabled && item.time === minute && !firedAlarms.has(`${item.id}:${today}`));
+    if (dueAlarms.length) {
+      dueAlarms.forEach((alarm) => firedAlarms.add(`${alarm.id}:${today}`));
+      ringAlarm(dueAlarms);
+    }
+  }
+
+  function stopRinging() {
+    clearInterval(alarmAudioInterval);
+    alarmAudioInterval = null;
+    ringingAlarm = null;
+    $("#alarm-overlay").classList.add("hidden");
+  }
+
+  function openTaskDialog() {
+    $("#task-form").reset();
+    $("#task-due").value = addDays(1);
+    $("#task-dialog").showModal();
+    $("#task-title").focus();
+  }
+
+  function switchView(viewName) {
+    if (!$("#view-" + viewName)) return;
+    $$(".view").forEach((view) => view.classList.toggle("active", view.id === `view-${viewName}`));
+    $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === viewName));
+    $$(".browser-tab").forEach((tab) => {
+      const active = tab.dataset.view === viewName;
+      tab.classList.toggle("active", active);
+      if (active) tab.setAttribute("aria-current", "page");
+      else tab.removeAttribute("aria-current");
+    });
+    $(".sidebar").classList.remove("open");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  document.addEventListener("click", (event) => {
+    const nav = event.target.closest("[data-view]");
+    if (nav) {
+      if (nav instanceof HTMLAnchorElement) event.preventDefault();
+      switchView(nav.dataset.view);
+    }
+    const action = event.target.closest("[data-action]");
+    if (action) {
+      const row = action.closest("[data-task-id], [data-alarm-id]");
+      const id = row?.dataset.taskId || row?.dataset.alarmId;
+      if (action.dataset.action === "toggle-task") {
+        const task = state.tasks.find((item) => item.id === id);
+        if (task) {
+          task.done = !task.done;
+          save();
+          renderTasks();
+          showToast(task.done ? "Assignment completed. Nice work!" : "Assignment moved back to your list.");
+        }
+      } else if (action.dataset.action === "delete-task") {
+        state.tasks = state.tasks.filter((item) => item.id !== id);
+        save();
+        renderTasks();
+        showToast("Assignment removed.");
+      } else if (action.dataset.action === "toggle-alarm") {
+        const alarm = state.alarms.find((item) => item.id === id);
+        if (alarm) alarm.enabled = !alarm.enabled;
+        save();
+        renderAlarms();
+      } else if (action.dataset.action === "delete-alarm") {
+        state.alarms = state.alarms.filter((item) => item.id !== id);
+        save();
+        renderAlarms();
+      }
+    }
+    const noteButton = event.target.closest("[data-note-id]");
+    if (noteButton && noteButton.dataset.noteId !== activeNoteId) {
+      clearTimeout(notesTimeout);
+      saveActiveNote();
+      activeNoteId = noteButton.dataset.noteId;
+      renderNotes();
+    }
+  });
+
+  $("#new-task-button").addEventListener("click", openTaskDialog);
+  $("#new-task-button-page").addEventListener("click", openTaskDialog);
+  $("#close-task-dialog").addEventListener("click", () => $("#task-dialog").close());
+  $("#cancel-task").addEventListener("click", () => $("#task-dialog").close());
+  $("#task-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    state.tasks.push({
+      id: crypto.randomUUID ? crypto.randomUUID() : `task-${Date.now()}`,
+      title: String(formData.get("title")).trim(),
+      subject: String(formData.get("subject") || "").trim(),
+      due: String(formData.get("due") || ""),
+      done: false,
+    });
+    save();
+    renderTasks();
+    $("#task-dialog").close();
+    showToast("Assignment added to your plan.");
+  });
+
+  $$(".filter-button").forEach((button) => button.addEventListener("click", () => {
+    activeFilter = button.dataset.filter;
+    $$(".filter-button").forEach((item) => item.classList.toggle("active", item === button));
+    renderTasks();
+  }));
+
+  $("#alarm-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const time = $("#alarm-time").value;
+    if (!time) return;
+    state.alarms.push({
+      id: `alarm-${Date.now()}`,
+      time,
+      label: $("#alarm-label").value.trim(),
+      enabled: true,
+    });
+    $("#alarm-form").reset();
+    save();
+    renderAlarms();
+    showToast("Alarm set. Keep this tab open to hear it.");
+  });
+
+  $("#dismiss-alarm").addEventListener("click", stopRinging);
+  $("#alarm-overlay").addEventListener("click", (event) => {
+    if (event.target === $("#alarm-overlay")) stopRinging();
+  });
+  $("#toggle-alarm-panel").addEventListener("click", () => {
+    const panel = $("#alarm-panel");
+    const opening = panel.classList.contains("hidden");
+    panel.classList.toggle("hidden", !opening);
+    $("#toggle-alarm-panel").setAttribute("aria-expanded", String(opening));
+    if (opening) $("#alarm-time").focus();
+  });
+  $("#close-alarm-panel").addEventListener("click", () => {
+    $("#alarm-panel").classList.add("hidden");
+    $("#toggle-alarm-panel").setAttribute("aria-expanded", "false");
+    $("#toggle-alarm-panel").focus();
+  });
+  $("#center-clock").addEventListener("click", () => {
+    const button = $("#center-clock");
+    const centered = button.getAttribute("aria-pressed") !== "true";
+    button.setAttribute("aria-pressed", String(centered));
+    $("#clock-desktop").classList.toggle("clock-off-center", !centered);
+  });
+  $("#zoom-wallpaper").addEventListener("click", () => {
+    const button = $("#zoom-wallpaper");
+    const zoomed = button.getAttribute("aria-pressed") !== "true";
+    button.setAttribute("aria-pressed", String(zoomed));
+    $("#clock-desktop").classList.toggle("wallpaper-zoomed", zoomed);
+  });
+  $("#fullscreen-clock").addEventListener("click", async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await $("#clock-desktop").requestFullscreen();
+    } catch {
+      showToast("Fullscreen isn’t available in this browser.");
+    }
+  });
+  document.addEventListener("fullscreenchange", () => {
+    const fullscreen = Boolean(document.fullscreenElement);
+    $("#fullscreen-clock").setAttribute("aria-label", fullscreen ? "Exit fullscreen" : "Enter fullscreen");
+    $("#fullscreen-clock").title = fullscreen ? "Exit fullscreen" : "Fullscreen";
+  });
+
+  let notesTimeout;
+  const updateNotesCount = () => {
+    const count = $("#study-notes").value.length;
+    $("#notes-count").textContent = `${count} ${count === 1 ? "character" : "characters"}`;
+  };
+  const scheduleNoteSave = () => {
+    updateNotesCount();
+    $("#notes-status").textContent = "Saving…";
+    clearTimeout(notesTimeout);
+    notesTimeout = setTimeout(() => {
+      saveActiveNote();
+      $("#notes-status").textContent = "Saved on this device";
+    }, 350);
+  };
+  $("#new-note-button").addEventListener("click", createNote);
+  $("#empty-new-note").addEventListener("click", createNote);
+  $("#note-title-input").addEventListener("input", scheduleNoteSave);
+  $("#study-notes").addEventListener("input", scheduleNoteSave);
+  $("#delete-note-button").addEventListener("click", () => {
+    const index = state.notes.findIndex((note) => note.id === activeNoteId);
+    if (index < 0) return;
+    state.notes.splice(index, 1);
+    activeNoteId = state.notes[Math.min(index, state.notes.length - 1)]?.id || null;
+    save();
+    renderNotes();
+    showToast("Note deleted.");
+  });
+
+  $("#settings-form").addEventListener("change", (event) => {
+    if (event.target.name === "theme" || event.target.name === "codeAccents") {
+      const formData = new FormData(event.currentTarget);
+      applySettings({
+        ...state.settings,
+        theme: String(formData.get("theme") || state.settings.theme),
+        codeAccents: formData.has("codeAccents"),
+      });
+      $("#settings-status").textContent = "Previewing changes. Save to keep them.";
+    }
+  });
+  $("#settings-form").addEventListener("input", (event) => {
+    if (event.target.name === "name") {
+      const name = event.target.value.trim().slice(0, 32) || "Jamie";
+      $("#profile-name").textContent = name;
+      $("#profile-avatar").textContent = name.charAt(0).toUpperCase();
+      $("#dashboard-name").textContent = name;
+      $("#wallpaper-greeting").innerHTML = `${currentGreeting()}, ${escapeHtml(name)}.<br /><span>Keep going. You’re doing great.</span>`;
+      $("#settings-status").textContent = "Name preview updated. Save to keep it.";
+    }
+  });
+  $("#settings-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const theme = String(formData.get("theme") || "midnight");
+    state.settings = {
+      name: String(formData.get("name") || "").trim().slice(0, 32) || "Jamie",
+      theme: ["midnight", "violet", "amber"].includes(theme) ? theme : "midnight",
+      codeAccents: formData.has("codeAccents"),
+    };
+    applySettings();
+    if (save()) {
+      $("#settings-status").textContent = "Settings saved on this device.";
+      showToast("Your study space is updated.");
+    } else {
+      $("#settings-status").textContent = "Couldn’t save settings on this device.";
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      $(".sidebar").classList.remove("open");
+      if (!$("#alarm-panel").classList.contains("hidden")) {
+        $("#alarm-panel").classList.add("hidden");
+        $("#toggle-alarm-panel").setAttribute("aria-expanded", "false");
+      }
+    }
+  });
+
+  renderTasks();
+  renderNotes();
+  renderSettings();
+  renderAlarms();
+  updateClock();
+  setInterval(updateClock, 1000);
+})();
+
+    </script>
+  </body>
+</html>
